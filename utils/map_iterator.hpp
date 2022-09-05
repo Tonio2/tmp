@@ -138,13 +138,13 @@ private:
 	linkPtr _ptr;
 };
 
-template <typename T>
+template <typename T, bool b>
 bool operator==(const ft::binaryiterator<T, b> lhs, const ft::binaryiterator<T, b> rhs)
 {
 	return (lhs.base() == rhs.base());
 }
 
-template <typename T>
+template <typename T, bool b>
 bool operator!=(const ft::binaryiterator<T, b> lhs, const ft::binaryiterator<T, b> rhs)
 {
 	return (lhs.base() != rhs.base());

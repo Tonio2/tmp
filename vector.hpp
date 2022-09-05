@@ -57,9 +57,19 @@ namespace ft
 			}
 		}
 		
-		vector (const vector& x) : _alloc(x.get_allocator()), _size(x.size()), _capacity(0)
+		vector (const vector& x) : _alloc(x.get_allocator()), _size(x._size), _capacity(x._capacity)
 		{
-			*this = x;
+			T	*tmp;
+
+			if (_size > 0) {
+				_start = _alloc.allocate(_capacity);
+				tmp = _start;
+				for (size_t i = 0; i < _size; i++)
+					_alloc.construct(tmp++, x[i]);
+			} else {
+				_start = 0;
+			}
+
 		}
 
 		vector &operator=(const vector& x)
@@ -73,7 +83,8 @@ namespace ft
 		~vector()
 		{
 			this->clear();
-			_alloc.deallocate(_start, _capacity);
+			if (_capacity)
+				_alloc.deallocate(_start, _capacity);
 		}
 					
 		void show_vector()
@@ -262,34 +273,93 @@ namespace ft
 			}
 		}
 
-		template <class InputIterator>
-			void insert(iterator position, InputIterator first, InputIterator last,
-			typename ft::enable_if<!ft::is_integral<InputIterator>::value, InputIterator>::type* = nullptr)
-		{
-			size_type	diff;
-			size_type	n;
-			iterator	it;
+		// template <class InputIterator>
+		// 	void insert(iterator position, InputIterator first, InputIterator last,
+		// 	typename ft::enable_if<!ft::is_integral<InputIterator>::value, InputIterator>::type* = nullptr)
+		// {
+		// 	size_type	diff;
+		// 	size_type	n;
+		// 	iterator	it;
 
-			diff = abs(this->end() - position);
-			n = 0;
-			while (first++ != last)
+		// 	diff = abs(this->end() - position);
+		// 	n = 0;
+		// 	while (first++ != last)
+		// 	{
+		// 		n++;
+		// 	}
+		// 	while (_size + n > _capacity)
+		// 		this->_increase_capacity();
+		// 	it = (this->end() + n - 1);
+		// 	while (diff--)
+		// 	{
+		// 		*it = *(it - n);
+		// 		it--;
+		// 	}
+		// 	_size += n;
+		// 	while (n--)
+		// 	{
+		// 		*it = *(--last);
+		// 		it--;
+		// 	}
+		// }
+
+		template <class InputIterator>
+		void insert(iterator position, InputIterator first, InputIterator last, typename ft::enable_if<!ft::is_integral<InputIterator>::value, InputIterator>::type* = 0) {
+			InputIterator tmp = first;
+			difference_type n = 0;
+			while (tmp != last)
 			{
 				n++;
+				tmp++;
 			}
-			while (_size + n > _capacity)
-				this->_increase_capacity();
-			it = (this->end() + n - 1);
-			while (diff--)
+
+			size_t new_capacity = _capacity;
+			while (_size + n > new_capacity)
+				new_capacity = 2 * new_capacity + (new_capacity == 0);
+			T* new_start = _alloc.allocate(new_capacity);
+
+
+			size_t i = 0;
+			while (begin() + i != position)
 			{
-				*it = *(it - n);
-				it--;
+				_alloc.construct(new_start + i, _start[i]);
+				i++;
 			}
+
+			difference_type j = 0;
+			try 
+			{
+				while (j < n)
+				{
+					_alloc.construct(new_start + i + j, *first++);
+					j++;
+				}
+			}
+			catch(...)
+			{
+				size_t l = 0;
+				while (l < i + j)
+				{
+					_alloc.destroy(new_start + l);
+					l++;
+				}
+				_alloc.deallocate(new_start, new_capacity);
+				throw;
+			}
+			
+			while (i < _size)
+			{
+				_alloc.construct(new_start + i + n, _start[i]);
+				i++;
+			}
+
+			for (i = 0; i < _size; i++)
+				_alloc.destroy(_start + i);
+			_alloc.deallocate(_start, _capacity);
+			
+			_start = new_start;
+			_capacity = new_capacity;
 			_size += n;
-			while (n--)
-			{
-				*it = *(--last);
-				it--;
-			}
 		}
 
 		iterator erase(iterator position)
@@ -316,7 +386,7 @@ namespace ft
 				{
 					_alloc.destroy(&(*it));
 				}
-				for (iterator it = first; it != this->end(); it++)
+				for (iterator it = first; it != this->end() - diff; it++)
 				{
 					*it = *(it + diff);
 				}
@@ -327,8 +397,8 @@ namespace ft
 
 		void swap(vector& x)
 		{
-			if (x == *this)
-				return ;
+			// if (x == *this)
+			// 	return ;
 
 			pointer tmpstart = x._start;
 			size_type tmpsize = x.size();
@@ -399,16 +469,19 @@ namespace ft
 	{
 		if (lhs.size() != rhs.size())
 			return (false);
-		typename ft::vector<T>::const_iterator first1 = lhs.begin();
-		typename ft::vector<T>::const_iterator first2 = rhs.begin();
-		while (first1 != lhs.end())
-		{
-			if (first2 == rhs.end() || *first1 != *first2)
-				return (false);
-			++first1;
-			++first2;
-		}
-		return (true);
+		for (size_t i = 0; i < lhs.size(); i++)
+			if (lhs[i] != rhs[i]) return false;
+		return true;
+		// typename ft::vector<T>::const_iterator first1 = lhs.begin();
+		// typename ft::vector<T>::const_iterator first2 = rhs.begin();
+		// while (first1 != lhs.end())
+		// {
+		// 	if (first2 == rhs.end() || *first1 != *first2)
+		// 		return (false);
+		// 	++first1;
+		// 	++first2;
+		// }
+		// return (true);
 	}
 
 	template <class T, class Alloc>
