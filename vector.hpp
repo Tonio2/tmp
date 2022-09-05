@@ -76,7 +76,8 @@ namespace ft
 		{
 			this->clear();
 			_alloc = x.get_allocator();
-			this->insert(this->end(), x.begin(), x.end());
+			if (x._size > 0)
+				this->insert(this->end(), x.begin(), x.end());
 			return *this;
 		}
 
@@ -452,7 +453,9 @@ namespace ft
 				{
 					_alloc.construct((tmp + i), *it);
 				}
-				// this->clear();
+				pointer tmp2 = _start;
+				for (size_t i = 0; i < _size; i++)
+						_alloc.destroy(tmp2++);
 				_alloc.deallocate(_start, _capacity);
 				_start = tmp;
 				_capacity *= 2;
